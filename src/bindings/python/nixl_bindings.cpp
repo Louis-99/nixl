@@ -660,6 +660,7 @@ PYBIND11_MODULE(_bindings, m) {
         .def(
             "postXferReq",
             [](nixlAgent &agent, uintptr_t reqh, std::string notif_msg) -> nixl_status_t {
+                py::gil_scoped_release release;
                 nixl_opt_args_t extra_params;
                 nixl_status_t ret;
                 if (notif_msg.size() > 0) {
