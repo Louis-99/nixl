@@ -1,5 +1,6 @@
 /*
  * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 Amazon.com, Inc. and affiliates.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,32 +17,22 @@
  */
 
 #include "backend/backend_plugin.h"
-#include "ucx_mo_backend.h"
-#include "ucx_utils.h"
-
-namespace {
-nixl_b_params_t
-get_ucx_mo_options() {
-    nixl_b_params_t params = get_ucx_backend_common_options();
-    params["num_ucx_engines"] = "8";
-    return params;
-}
-} // namespace
+#include "libfabric_backend.h"
 
 // Plugin type alias for convenience
-using ucx_mo_plugin_t = nixlBackendPluginCreator<nixlUcxMoEngine>;
+using libfabric_plugin_t = nixlBackendPluginCreator<nixlLibfabricEngine>;
 
-#ifdef STATIC_PLUGIN_UCX_MO
+#ifdef STATIC_PLUGIN_LIBFABRIC
 nixlBackendPlugin *
-createStaticUCX_MOPlugin() {
-    return ucx_mo_plugin_t::create(
-        NIXL_PLUGIN_API_VERSION, "UCX_MO", "0.1.0", get_ucx_mo_options(), {DRAM_SEG, VRAM_SEG});
+createStaticLIBFABRICPlugin() {
+    return libfabric_plugin_t::create(
+        NIXL_PLUGIN_API_VERSION, "LIBFABRIC", "0.1.0", {}, {DRAM_SEG, VRAM_SEG});
 }
 #else
 extern "C" NIXL_PLUGIN_EXPORT nixlBackendPlugin *
 nixl_plugin_init() {
-    return ucx_mo_plugin_t::create(
-        NIXL_PLUGIN_API_VERSION, "UCX_MO", "0.1.0", get_ucx_mo_options(), {DRAM_SEG, VRAM_SEG});
+    return libfabric_plugin_t::create(
+        NIXL_PLUGIN_API_VERSION, "LIBFABRIC", "0.1.0", {}, {DRAM_SEG, VRAM_SEG});
 }
 
 extern "C" NIXL_PLUGIN_EXPORT void

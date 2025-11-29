@@ -192,7 +192,10 @@ public:
     releaseReqH(nixlBackendReqH *handle) const override;
 
     nixl_status_t
-    createGpuXferReq(const nixlBackendReqH &handle, nixlGpuXferReqH &gpu_req_hndl) const override;
+    createGpuXferReq(const nixlBackendReqH &req_hndl,
+                     const nixl_meta_dlist_t &local_descs,
+                     const nixl_meta_dlist_t &remote_descs,
+                     nixlGpuXferReqH &gpu_req_hndl) const override;
 
     void
     releaseGpuXferReq(nixlGpuXferReqH gpu_req_hndl) const override;
@@ -201,7 +204,9 @@ public:
     getGpuSignalSize(size_t &signal_size) const override;
 
     nixl_status_t
-    prepGpuSignal(const nixlBackendMD &meta, void *signal) const override;
+    prepGpuSignal(const nixlBackendMD &meta,
+                  void *signal,
+                  const nixl_opt_b_args_t *opt_args = nullptr) const override;
 
     int
     progress();
@@ -214,6 +219,11 @@ public:
     // public function for UCX worker to mark connections as connected
     nixl_status_t
     checkConn(const std::string &remote_agent);
+
+private:
+    // Helper to extract worker_id from opt_args->customParam or nullopt if not found
+    [[nodiscard]] std::optional<size_t>
+    getWorkerIdFromOptArgs(const nixl_opt_b_args_t *opt_args) const noexcept;
 
 protected:
     const std::vector<std::unique_ptr<nixlUcxWorker>> &
@@ -278,8 +288,8 @@ private:
     nixl_status_t
     notifSendPriv(const std::string &remote_agent,
                   const std::string &msg,
-                  nixlUcxReq &req,
-                  const std::unique_ptr<nixlUcxEp> &ep) const;
+                  const std::unique_ptr<nixlUcxEp> &ep,
+                  nixlUcxReq *req = nullptr) const;
 
     ucx_connection_ptr_t
     getConnection(const std::string &remote_agent) const;

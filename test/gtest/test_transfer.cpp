@@ -121,7 +121,7 @@ protected:
     {
         nixl_b_params_t params;
 
-        if (getBackendName() == "UCX" || getBackendName() == "UCX_MO") {
+        if (getBackendName() == "UCX") {
             params["num_workers"] = std::to_string(getNumWorkers());
             params["num_threads"] = std::to_string(getNumThreads());
             params["split_batch_size"] = "32";
@@ -540,11 +540,6 @@ TEST_P(TestTransfer, NotificationOnly) {
 }
 
 TEST_P(TestTransfer, SelfNotification) {
-    // UCX_MO does not support local communication
-    if (getBackendName() == "UCX_MO") {
-        GTEST_SKIP() << "UCX_MO does not support local communication";
-    }
-
     constexpr size_t repeat = 100;
     constexpr size_t num_threads = 4;
     doNotificationTest(
@@ -703,7 +698,8 @@ TEST_P(TestTransfer, PrepGpuSignal) {
     GTEST_SKIP() << "UCX GPU device API not available, skipping test";
 #else
     size_t gpu_signal_size = 0;
-    nixl_status_t size_status = getAgent(0).getGpuSignalSize(*backend_handles[0], gpu_signal_size);
+    nixl_opt_args_t extra_params = {.backends = {backend_handles[0]}};
+    nixl_status_t size_status = getAgent(0).getGpuSignalSize(gpu_signal_size, &extra_params);
     ASSERT_EQ(size_status, NIXL_SUCCESS) << "getGpuSignalSize failed";
     ASSERT_GT(gpu_signal_size, 0) << "GPU signal size is 0";
 
@@ -713,7 +709,7 @@ TEST_P(TestTransfer, PrepGpuSignal) {
 
     auto signal_desc_list = makeDescList<nixlBlobDesc>(signal_buffer, VRAM_SEG);
 
-    nixl_status_t status = getAgent(0).prepGpuSignal(signal_desc_list);
+    nixl_status_t status = getAgent(0).prepGpuSignal(signal_desc_list, &extra_params);
 
     EXPECT_EQ(status, NIXL_SUCCESS)
         << "prepGpuSignal returned unexpected status: " << nixlEnumStrings::statusStr(status);
@@ -732,8 +728,4 @@ INSTANTIATE_TEST_SUITE_P(ucx_threadpool,
 INSTANTIATE_TEST_SUITE_P(ucx_threadpool_no_pt,
                          TestTransfer,
                          testing::Values(std::make_tuple("UCX", false, 6, 4)));
-INSTANTIATE_TEST_SUITE_P(ucx_mo,
-                         TestTransfer,
-                         testing::Values(std::make_tuple("UCX_MO", true, 2, 0)));
-
 } // namespace gtest
